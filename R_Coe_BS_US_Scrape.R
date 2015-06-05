@@ -8,7 +8,7 @@ library(pipeR)
 ################################
 ###########################################
 #########List of Level one urls (the sub-forums)
-main_url<-"https://community.breastcancer.org/"
+main_url<-"https://community.breastcancer.org"
 #retrieve the first forum
 mst<-html_session(main_url)
 #now extract to the first
@@ -16,7 +16,10 @@ forum_url_suff<-mst%>% html_nodes('.donate span , h3 a') %>% html_attr("href")
 #trim off the forst one which is an NA
 forum_url_suff<-forum_url_suff[-1]
 
-for(frm in 1:length(forum_url_suff)){
+#for(frm in 1:length(forum_url_suff)){
+  #THERE ARE 80 FORUMS
+  frm=4
+
 frm_url<-paste0(main_url,forum_url_suff[frm])
 mst<-html_session(frm_url)
 #last_pg<-mst%>% html_nodes('.topic-text+ .paging_controls li:nth-child(5) a') %>% html_text() 
@@ -35,12 +38,17 @@ post_title<-mst%>% html_nodes('h3 a') %>% html_text()
 topic_url_suff1<-c(topic_url_suff1,topic_url_suff)
 views1<-c(views1,views)
 post_title1<-c(post_title1,post_title)
-}
-}
+
+
 length(views1)==length(topic_url_suff1)
 length(topic_url_suff1)==length(post_title1)
 top_views<-cbind(topic_url_suff1,views1,post_title1)
+}
 write.table(top_views, file = "/Users/AndyC/Dropbox/rdata/bc_us/top_views.csv", sep = ",", col.names = NA, na="NA", qmethod = "double")
+
+topic_url_suff1<-as.character(read.delim(file="/Users/AndyC/Dropbox/rdata/bc_us/top_views.csv",header=F,sep=",",stringsAsFactors =F)[,1])
+
+#Now visit the collected URLs one at a time and collect the posts
 
 
 thred_pg<-which(topic_url_suff1=="/forum/83/topic/829967")#just to get to a thread wiht multiple pages
@@ -51,8 +59,22 @@ thred_pg_url<-paste0(main_url,topic_url_suff1[thred_pg])
 mst<-html_session(thred_pg_url)
 no_pages<-mst%>% html_nodes('.original-topic+ .paging_controls p') %>% html_text()
 no_pages<-as.numeric(unlist(strsplit(no_pages," "))[4])
+#create the data frame for the results
+posts3<-data.frame(forum=character(),
+                   thread_no=numeric(),
+                   post_no=character(),
+                   views_n= character(),
+                   username=character(),
+                   joined=character(),
+                   no_posts=character(),
+                   location=character(),
+                   date_posted=character(),
+                   info_block=character(),
+                   post=character(),
+                   url=character())
+
 for(pg in 1:no_pages){
-  thred_pg_url_pg <-paste0(thred_pg_url,"?page=",pg)
+  thred_pg_url_pg<-paste0(thred_pg_url,"?page=",pg)
   
   mst<-html_session(thred_pg_url_pg)
   #####now collect the data
@@ -88,18 +110,24 @@ for(pg in 1:no_pages){
   }
   info_block<-character(length(username))
   info_block[loc_pres=="1"]<-info_block1
-  
   #####
   post<-mst%>% html_nodes('.user-post') %>% html_text()
   post<-gsub("\n","",gsub("\r","",gsub("\t","",post)))
   post<-gsub("\\s+"," ",post)
   post<-gsub(" Log in to post a reply ","",post)
   post<-gsub(" Log in to post a reply ","",post)
-  
   forum<-rep(mst%>% html_nodes('#crumbs a+ a') %>% html_text(),length(username))
   thread<-rep(mst%>% html_nodes('h1') %>% html_text(),length(username))
   url<-rep(thred_pg_url_pg,length(username))
- views_n<-rep(views[thred_pg],length(username))
-}
+  views_n<-rep(views[thred_pg],length(username))
+  #put togeher the data in a data frame
+  posts2<-data.frame(forum,thread_no,post_no,views_n,username,joined,no_posts,location,
+                     date_posted,info_block,post,url)
+  posts3<-rbind(posts3,posts2)
+  Sys.sleep(0.25)
+  print(paste0(round((no_pages/pg)*100,0)," % complete"))
+}#pg loop
 
+save_path<-paste0("/Users/AndyC/Dropbox/rdata/bc_us/results/BC_US_posts_forum",frm,".csv")
+write.table(posts3, file = save_path, sep = ",", col.names = NA, na="NA", qmethod = "double")
 
