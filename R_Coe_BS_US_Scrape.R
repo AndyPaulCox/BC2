@@ -56,20 +56,50 @@ for(pg in 1:no_pages){
   
   mst<-html_session(thred_pg_url_pg)
   #####now collect the data
-  
-  
-  
-  
-  date_posted<-mst%>% html_nodes('#Section_Content div p > :nth-child(1)') %>% html_text()
+  date_posted<-mst%>% html_nodes('.post-time > strong , .left') %>% html_text()
   joined<-mst%>% html_nodes('.joined_date') %>% html_text()
-  location<-mst%>% html_nodes('.original-topic+ .paging_controls p') %>% html_text()
-  no_posts<-mst%>% html_nodes('.original-topic+ .paging_controls p') %>% html_text()
-  username<-mst%>% html_nodes('strong a , .post-time a , a strong') %>% html_text()
-  info_block<-mst%>% html_nodes('.original-topic+ .paging_controls p') %>% html_text()
-  post<-mst%>% html_nodes('.original-topic+ .paging_controls p') %>% html_text()
+  joined<-gsub("Joined: ","",joined)
+
+  location1<-mst%>% html_nodes('.author_location') %>% html_text()##
+  #test if location is present
+  all_posts<-mst%>% html_nodes('.original-topic , .post')
+  loc_pres<-character(length(username))
+  for(i in 1:length(username)){
+    x<-grep("author_location",xmlToList(all_posts[[i]]))
+    if(length(x)==0)loc_pres[i]<-0
+    if(length(x)>0)loc_pres[i]<-1
+  }
+  location<-character(length(username))
+  location[loc_pres=="1"]<-location1
   
-  forum<-rep(mst%>% html_nodes('h1') %>% html_text(),length(username))
+  no_posts<-mst%>% html_nodes('.post_count') %>% html_text()
+  username<-mst%>% html_nodes('strong a , .user-info a') %>% html_text()
+  info_block1<-mst%>% html_nodes('.post_sig') %>% html_text()
+  info_block1<-gsub("\n","",gsub("\r","",gsub("\t","",info_block)))
+  info_block1<-gsub("\\s+"," ",info_block)
+  #####
+  #test if info block is present
+  all_posts<-mst%>% html_nodes('.original-topic , .post')
+  loc_pres<-character(length(username))
+  for(i in 1:length(username)){
+    x<-grep("post_sig",xmlToList(all_posts[[i]]))
+    if(length(x)==0)loc_pres[i]<-0
+    if(length(x)>0)loc_pres[i]<-1
+  }
+  info_block<-character(length(username))
+  info_block[loc_pres=="1"]<-info_block1
+  
+  #####
+  post<-mst%>% html_nodes('.user-post') %>% html_text()
+  post<-gsub("\n","",gsub("\r","",gsub("\t","",post)))
+  post<-gsub("\\s+"," ",post)
+  post<-gsub(" Log in to post a reply ","",post)
+  post<-gsub(" Log in to post a reply ","",post)
+  
+  forum<-rep(mst%>% html_nodes('#crumbs a+ a') %>% html_text(),length(username))
   thread<-rep(mst%>% html_nodes('h1') %>% html_text(),length(username))
   url<-rep(thred_pg_url_pg,length(username))
  views_n<-rep(views[thred_pg],length(username))
 }
+
+
