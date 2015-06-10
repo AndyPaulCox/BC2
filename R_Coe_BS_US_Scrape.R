@@ -74,7 +74,7 @@ for (thred_pg in 1:length(topic_url_suff1)) {
     
     mst <- html_session(thred_pg_url_pg)
     ##### now collect the data
-    username <- mst %>% html_nodes("strong a , .user-info a") %>% html_text()#####causing issues picking up other items
+    username <- mst %>% html_nodes("strong a,.user-info a") %>% html_text()#####causing issues picking up other items
     date_posted <- mst %>% html_nodes(".post-time > strong , .left") %>% html_text()
     joined <- mst %>% html_nodes(".joined_date") %>% html_text()
     joined <- gsub("Joined: ", "", joined)
